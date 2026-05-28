@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "AIPalTranslatorExtension (Package)": {
+      "commandName": "MsixPackage",
+      "doNotLaunchApp": true
+    },
+    "AIPalTranslatorExtension (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

@@ -1,0 +1,62 @@
+# ==============================================
+# 通用 IDE 配置文件（你的 .idea 文件夹）
+# ==============================================
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# ==============================================
+# .NET / C# 编译输出（bin, obj）
+# ==============================================
+[Bb]in/
+[Oo]bj/
+out/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.ilk
+*.meta
+*.tmp
+
+# ==============================================
+# Windows App SDK / AppX 发布文件
+# ==============================================
+Appx/
+AppxPackages/
+Packages/
+Publish/
+publish/
+*.appx
+*.msix
+*.msixupload
+*.appxbundle
+*.msixbundle
+
+# ==============================================
+# 生成的代码 / 缓存文件
+# ==============================================
+Generated Files/
+.winmd_cache/
+IIDOptimizer/
+R2R/
+ref/
+refint/
+embed/
+
+.github/*
+!.github/workflows
+setup-*.iss
+
+# ==============================================
+# 系统垃圾文件
+# ==============================================
+.DS_Store
+Thumbs.db
+*.log
+
+!**/Properties/launchSettings.json
+!*.pubxml
