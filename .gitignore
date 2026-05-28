@@ -50,6 +50,7 @@ embed/
 .github/*
 !.github/workflows
 setup-*.iss
+!setup-template.iss
 
 # ==============================================
 # 系统垃圾文件
