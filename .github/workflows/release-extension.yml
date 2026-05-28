@@ -1,0 +1,61 @@
+name: Build and Release Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 0.0.1.0)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes'
+        required: false
+        default: 'New release.'
+        type: string
+
+env:
+  EXTENSION_NAME: AIPalTranslatorExtension
+  FOLDER_NAME: AIPalTranslatorExtension
+  DISPLAY_NAME: AI Pal Translator Extension
+
+jobs:
+  build:
+    runs-on: windows-2022
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install Inno Setup
+      run: choco install innosetup -y --no-progress
+
+    - name: Build EXE installer
+      run: |
+        Set-Location "${{ env.FOLDER_NAME }}"
+        .\build-exe.ps1 -Version "${{ github.event.inputs.version }}" -Platforms @("x64")
+      shell: pwsh
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        name: "${{ env.DISPLAY_NAME }} v${{ github.event.inputs.version }}"
+        body: |
+          ## ${{ env.DISPLAY_NAME }} ${{ github.event.inputs.version }}
+          
+          ${{ github.event.inputs.release_notes }}
+          
+          ## Installation
+          Download and run the installer below. Administrator privileges required.
+        files: ${{ env.FOLDER_NAME }}/bin/Release/installer/*.exe
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

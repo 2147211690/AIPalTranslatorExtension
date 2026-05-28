@@ -1,0 +1,44 @@
+name: Update WinGet Manifest
+
+on:
+  release:
+    types: [published]
+
+env:
+  PACKAGE_ID: 你的名字.AIPalTranslatorExtension  # ← 首次提交后确定的 PackageIdentifier
+
+jobs:
+  update-winget:
+    runs-on: windows-latest
+    steps:
+      - name: Get release info
+        id: release
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.release.tag_name }}"
+          $version = $tag -replace "^v", ""
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "TAG=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Install wingetcreate
+        shell: pwsh
+        run: |
+          iwr https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+
+      - name: Update WinGet manifest
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}  # 需要 classic PAT
+        run: |
+          $version = "${{ steps.release.outputs.VERSION }}"
+          $tag = "${{ steps.release.outputs.TAG }}"
+          $url = "https://github.com/${{ github.repository }}/releases/download/$tag/AIPalTranslatorExtension-Setup-$version-x64.exe"
+          
+          Write-Host "Updating manifest for version $version"
+          Write-Host "URL: $url"
+          
+          .\wingetcreate.exe update ${{ env.PACKAGE_ID }} `
+            --version $version `
+            --urls "$url|x64" `
+            --token $env:GITHUB_TOKEN `
+            --submit
