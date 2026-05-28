@@ -62,9 +62,9 @@ public class AIPalTranslatorExtensionSettings : JsonSettingsManager
         Placeholder = "30"
     };
 
-    public readonly TextSetting MoreRule = new("MoreRule", "More Rule", "添加更多提示规则(通常使用英文提示),使用换行隔开", 
+    public readonly TextSetting MoreRule = new("MoreRule", "More Rule", "添加更多提示规则(通常使用英文提示,使用换行隔开)", 
         """
-        Proper nouns: use standard name first (e.g., 我的世界 → minecraft). literal as alternative.
+        Proper nouns: use standard name first (e.g. 我的世界 → minecraft). literal as alternative.
         Use lowercase whenever possible.
         Output 1-5 translations per input.
         """)
