@@ -2,6 +2,8 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using AIPalTranslatorExtension.Pages;
+using AiTranslatorExtension;
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
 
@@ -18,6 +20,7 @@ public partial class AIPalTranslatorExtensionCommandsProvider : CommandProvider
         _commands = [
             new CommandItem(new AIPalTranslatorExtensionPage()) { Title = DisplayName },
         ];
+        Settings = AIPalTranslatorExtensionSettings.Instance.Settings;
     }
 
     public override ICommandItem[] TopLevelCommands()
