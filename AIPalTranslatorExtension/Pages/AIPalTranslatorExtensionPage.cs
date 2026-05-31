@@ -24,7 +24,7 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
     private Lock _cancelLock = new();
     private Lock _timerLock = new();
     
-    public static readonly int SearchDelay = 200;
+    public static readonly int SearchDelay = 300;
     public AIPalTranslatorExtensionPage()
     {
         Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
@@ -45,14 +45,12 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
                 _cancellationTokenSource = new();
                 IsLoading = true;
             }
-
             var result = await TranslateHelper.TranslateAsync(SearchText, _cancellationTokenSource!);
-            if (result.ResultLanguage is null) return;
             lock (_resultLock)
             {
                 _currentResult = result;
-                IsLoading = false;
                 RaiseItemsChanged();
+                IsLoading = false;
             }
         }
         catch (Exception ex)
@@ -61,26 +59,22 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
             {
                 _currentResult = new(null, null, 0, ex);
                 RaiseItemsChanged();
+                IsLoading = false;
             }
         }
-        finally
-        {
-            IsLoading = false;
-        }
     }
+
     public override void UpdateSearchText(string oldSearch, string newSearch)
     {
-        lock (_timerLock)
-        {
-            if (oldSearch == newSearch || string.IsNullOrEmpty(newSearch)) return;
-            _currentTimer.Stop();
-            _currentTimer.Start();
-        }
+        if (oldSearch == newSearch || string.IsNullOrEmpty(newSearch)) return;
+        _currentTimer.Stop();
+        _currentTimer.Start();
     }
+
     public override IListItem[] GetItems()
     {
         if (_currentResult.Error != null) 
-            return [new ListItem(new NoOpCommand()) { Title = $"错误:{_currentResult.Error}" }];
+            return [GetResultCommand($"错误:{_currentResult.Error}")];
         return _currentResult.ResultTexts?
             .Select(GetResultCommand)
             //.Append(new ListItem(new NoOpCommand()){Title = $"消耗Token:{_currentResult.TokenUsed}"})
@@ -93,5 +87,12 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
         {
             Title = resultText,
         };
+    }
+    ~AIPalTranslatorExtensionPage()
+    {
+        _currentTimer.Stop();
+        _currentTimer.Dispose();
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
     }
 }

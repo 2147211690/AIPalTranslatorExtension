@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using AIPalTranslatorExtension.Pages;
-using AiTranslatorExtension;
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
 
@@ -17,10 +16,11 @@ public partial class AIPalTranslatorExtensionCommandsProvider : CommandProvider
     {
         DisplayName = "AI Pal Translator Extension for command palette";
         Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
+        Settings = SettingsManager.Instance.Settings;
         _commands = [
             new CommandItem(new AIPalTranslatorExtensionPage()) { Title = DisplayName },
         ];
-        Settings = AIPalTranslatorExtensionSettings.Instance.Settings;
+
     }
 
     public override ICommandItem[] TopLevelCommands()
