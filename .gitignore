@@ -27,6 +27,7 @@ out/
 # ==============================================
 Appx/
 AppxPackages/
+AppPackages/
 Packages/
 Publish/
 publish/

@@ -13,7 +13,6 @@ public class AIPalTranslatorExtensionSettings : JsonSettingsManager
     {
         FilePath = GetSettingsPath();
         Settings = new Settings();
-        LoadSettings();
         Settings.Add(ModelUrl);
         Settings.Add(Model);
         Settings.Add(ApiKey);
@@ -21,6 +20,7 @@ public class AIPalTranslatorExtensionSettings : JsonSettingsManager
         Settings.Add(Language2);
         Settings.Add(MaxOutputToken);
         Settings.Add(MoreRule);
+        LoadSettings();
         Settings.SettingsChanged += SettingsOnSettingsChanged;
     }
 

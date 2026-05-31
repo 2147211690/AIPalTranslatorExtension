@@ -56,7 +56,7 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
         {
             if (ex is not TaskCanceledException)
             {
-                _currentResult = new(null, null, 0);
+                _currentResult = new(null, null, 0, ex);
                 RaiseItemsChanged();
             }
         }
@@ -72,7 +72,8 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
     }
     public override IListItem[] GetItems()
     {
-        if (_currentResult.ResultLanguage is null) return [new ListItem(new NoOpCommand()) { Title = "意外的错误" }];
+        if (_currentResult.Error != null) 
+            return [new ListItem(new NoOpCommand()) { Title = $"错误:{_currentResult.Error}" }];
         return _currentResult.ResultTexts!
             .Select(GetResultCommand)
             //.Append(new ListItem(new NoOpCommand()){Title = $"消耗Token:{_currentResult.TokenUsed}"})

@@ -61,37 +61,31 @@ public static partial class TranslateHelper
             (es=it)Hello → (es)hola
             """;
     }
-    
+
     public static async Task<TranslateResult> TranslateAsync(string text, CancellationTokenSource cancellationToken)
     {
         var input = $"({Language1}={Language2}){text}";
         var api = new TornadoApi(new Uri(ModelUrl), ApiKey);
         var model = new ChatModel(Model);
-        try
+        var result = await api.Chat.CreateChatCompletion(new ChatRequest
         {
-            var result = await api.Chat.CreateChatCompletion(new ChatRequest
-            {
-                Model = model,
-                Messages = [
-                    new ChatMessage(ChatMessageRoles.System, SystemMessage),
-                    new ChatMessage(ChatMessageRoles.User, input)
-                ],
-                MaxTokens = MaxOutputToken,
-            }).WaitAsync(cancellationToken.Token);
-            var response = result.Choices[0].Message;
-            var match = ResponseRegex.Match(response.Content);
-            return !match.Success ?
-                new TranslateResult(null, null, 0) : 
-                new TranslateResult(match.Groups["language"].Value, 
-                    match.Groups["translations"].Value.Split('|'),
-                    response.GetMessageTokens()
-                    );
-        }
-        catch (Exception ex)
-        {
-            if (ex is TaskCanceledException) throw;
-            return new TranslateResult(null, null, 0);
-        }
+            Model = model,
+            Messages =
+            [
+                new ChatMessage(ChatMessageRoles.System, SystemMessage),
+                new ChatMessage(ChatMessageRoles.User, input)
+            ],
+            MaxTokens = MaxOutputToken,
+        }).WaitAsync(cancellationToken.Token);
+        var response = result.Choices[0].Message;
+        var match = ResponseRegex.Match(response.Content);
+        return !match.Success
+            ? throw new InvaildAiResponseException()
+            : new TranslateResult(match.Groups["language"].Value,
+                match.Groups["translations"].Value.Split('|'),
+                response.GetMessageTokens()
+            );
     }
 }
-public record struct TranslateResult(string? ResultLanguage, string[]? ResultTexts, int TokenUsed);
+public record struct TranslateResult(string? ResultLanguage, string[]? ResultTexts, int TokenUsed, Exception? Error = null);
+public class InvaildAiResponseException() : Exception("Invalid ai response");
