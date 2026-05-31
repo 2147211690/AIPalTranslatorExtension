@@ -6,36 +6,62 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using AIPalTranslatorExtension.Helper;
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
-using Timer = System.Timers.Timer;
 using TranslateHelper = AIPalTranslatorExtension.Helper.TranslateHelper;
 
 namespace AIPalTranslatorExtension.Pages;
 
-internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
+internal sealed class AIPalTranslatorExtensionPage : DynamicListPage, IDisposable
 {
-    private Timer _currentTimer;
     private CancellationTokenSource? _cancellationTokenSource = new();
     private TranslateResult _currentResult = new(null, null, 0);
     private Lock _resultLock = new();
     private Lock _cancelLock = new();
-    private Lock _timerLock = new();
-    
-    public static readonly int SearchDelay = 300;
+    private PageState _state = PageState.Input;
+    private PageState State
+    {
+        get => _state;
+        set
+        {
+            if (_state == value) return;
+            // 退出状态
+            switch (_state)
+            {
+                case PageState.Loading:
+                    IsLoading = false;
+                    break;
+            }
+            _state = value;
+            // 进入状态
+            switch (_state)
+            {
+                case PageState.Input:
+                    _cancellationTokenSource?.Cancel();
+                    _cancellationTokenSource = null;
+                    RaiseItemsChanged();
+                    IsLoading = false;
+                    break;
+                case PageState.Loading:
+                    RaiseItemsChanged();
+                    IsLoading = true;
+                    TranslateAsync();
+                    break;
+                case PageState.Result:
+                    RaiseItemsChanged();
+                    break;
+            }
+        }
+    }
     public AIPalTranslatorExtensionPage()
     {
         Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
         Title = "AI Pal Translator Extension for command palette";
         Name = "Open";
-        _currentTimer = new Timer(SearchDelay);
-        _currentTimer.AutoReset = false;
-        _currentTimer.Elapsed += CurrentTimerOnElapsed;
     }
 
-    private async void CurrentTimerOnElapsed(object? sender, ElapsedEventArgs e)
+    private async void TranslateAsync()
     {
         try
         {
@@ -43,14 +69,12 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
             {
                 _cancellationTokenSource?.Cancel();
                 _cancellationTokenSource = new();
-                IsLoading = true;
             }
             var result = await TranslateHelper.TranslateAsync(SearchText, _cancellationTokenSource!);
             lock (_resultLock)
             {
                 _currentResult = result;
-                RaiseItemsChanged();
-                IsLoading = false;
+                State = PageState.Result;
             }
         }
         catch (Exception ex)
@@ -58,29 +82,33 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
             if (ex is not TaskCanceledException)
             {
                 _currentResult = new(null, null, 0, ex);
-                RaiseItemsChanged();
-                IsLoading = false;
+                State = PageState.Result;
             }
         }
     }
 
     public override void UpdateSearchText(string oldSearch, string newSearch)
     {
-        if (oldSearch == newSearch || string.IsNullOrEmpty(newSearch)) return;
-        _currentTimer.Stop();
-        _currentTimer.Start();
+        State = PageState.Input;
     }
 
     public override IListItem[] GetItems()
     {
-        if (_currentResult.Error != null) 
-            return [GetResultCommand($"错误:{_currentResult.Error}")];
-        return _currentResult.ResultTexts?
-            .Select(GetResultCommand)
-            //.Append(new ListItem(new NoOpCommand()){Title = $"消耗Token:{_currentResult.TokenUsed}"})
-            .ToArray() ?? [];
+        switch (State)
+        {
+            case PageState.Input:
+                return [new ListItem(new TranslateCommand(this)){Title = "翻译"}];
+            case PageState.Result:
+                if (_currentResult.Error != null) return [GetResultCommand($"错误:{_currentResult.Error}")];
+                return _currentResult.ResultTexts?
+                    .Select(GetResultCommand)
+                    //.Append(new ListItem(new NoOpCommand()){Title = $"消耗Token:{_currentResult.TokenUsed}"})
+                    .ToArray() ?? [];
+            default:
+                return [];
+        }
     }
-
+    
     private IListItem GetResultCommand(string resultText)
     {
         return new ListItem(new CopyTextCommand(resultText))
@@ -88,11 +116,37 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
             Title = resultText,
         };
     }
-    ~AIPalTranslatorExtensionPage()
+    
+    private void Dispose(bool disposing)
     {
-        _currentTimer.Stop();
-        _currentTimer.Dispose();
-        _cancellationTokenSource?.Cancel();
-        _cancellationTokenSource?.Dispose();
+        if (disposing)
+        {
+            _cancellationTokenSource?.Dispose();
+        }
     }
+
+    public void Dispose()
+    {
+        Dispose(true);
+    }
+    
+    private class TranslateCommand(AIPalTranslatorExtensionPage page) : InvokableCommand
+    {
+        private readonly AIPalTranslatorExtensionPage _page = page ?? throw new ArgumentNullException(nameof(page));
+        private static readonly CommandResult Result = CommandResult.KeepOpen();
+        public override ICommandResult Invoke()
+        {
+            _page.State = PageState.Loading;
+            return Result;
+        }
+    }
+    
+    private enum PageState
+    {
+        Input,
+        Loading,
+        Result,
+    }
+    
+
 }
