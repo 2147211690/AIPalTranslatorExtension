@@ -19,6 +19,7 @@ internal sealed class AIPalTranslatorExtensionPage : DynamicListPage, IDisposabl
     private TranslateResult _currentResult = new(null, null, 0);
     private Lock _resultLock = new();
     private Lock _cancelLock = new();
+    private IListItem[]? _lastResultItems;
     private PageState _state = PageState.Input;
     private PageState State
     {
@@ -70,7 +71,7 @@ internal sealed class AIPalTranslatorExtensionPage : DynamicListPage, IDisposabl
                 _cancellationTokenSource?.Cancel();
                 _cancellationTokenSource = new();
             }
-            var result = await TranslateHelper.TranslateAsync(SearchText, _cancellationTokenSource!);
+            var result = await TranslateHelper.TranslateAsync(SearchText, _cancellationTokenSource.Token);
             lock (_resultLock)
             {
                 _currentResult = result;
@@ -97,10 +98,10 @@ internal sealed class AIPalTranslatorExtensionPage : DynamicListPage, IDisposabl
         switch (State)
         {
             case PageState.Input:
-                return [new ListItem(new TranslateCommand(this)){Title = "翻译"}];
+                return [new ListItem(new TranslateCommand(this)) { Title = "翻译" }, .. (_lastResultItems ?? [])];
             case PageState.Result:
-                if (_currentResult.Error != null) return [GetResultCommand($"错误:{_currentResult.Error}")];
-                return _currentResult.ResultTexts?
+                if (_currentResult.Error != null) return _lastResultItems = [GetResultCommand($"错误:{_currentResult.Error}")];
+                return _lastResultItems = _currentResult.ResultTexts?
                     .Select(GetResultCommand)
                     //.Append(new ListItem(new NoOpCommand()){Title = $"消耗Token:{_currentResult.TokenUsed}"})
                     .ToArray() ?? [];

@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using LlmTornado;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
+using LlmTornado.Completions;
 
 namespace AIPalTranslatorExtension.Helper;
 
@@ -16,7 +18,7 @@ public static partial class TranslateHelper
     private static partial Regex ResponseRegex { get; }
     private static SettingsManager S => SettingsManager.Instance;
 
-    public static async Task<TranslateResult> TranslateAsync(string text, CancellationTokenSource cancellationToken)
+    public static async Task<TranslateResult> TranslateAsync(string text, CancellationToken cancellationToken)
     {
         var input = $"({S.Language1Value}={S.Language2Value}){text}";
         var api = new TornadoApi(new Uri(S.ModelUrlValue), S.ApiKeyValue);
@@ -30,17 +32,26 @@ public static partial class TranslateHelper
                 new ChatMessage(ChatMessageRoles.User, input)
             ],
             MaxTokens = S.MaxOutputTokenValue,
-        }).WaitAsync(cancellationToken.Token);
+            Temperature = 0.1f,
+            CancellationToken = cancellationToken,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions()
+            {
+                Thinking = new AnthropicThinkingSettings()
+                {
+                    Enabled = false,
+                }
+            })
+        }).WaitAsync(cancellationToken);
         if (result is null) throw new TaskCanceledException();
         var response = result.Choices[0].Message;
         var match = ResponseRegex.Match(response.Content);
         return !match.Success
-            ? throw new InvaildAiResponseException()
+            ? throw new InvalidAiResponseException()
             : new TranslateResult(match.Groups["language"].Value,
                 match.Groups["translations"].Value.Split('|'),
-                response.GetMessageTokens()
+                result.Usage?.CompletionTokens ?? -1
             );
     }
 }
 public record struct TranslateResult(string? ResultLanguage, string[]? ResultTexts, int TokenUsed, Exception? Error = null);
-public class InvaildAiResponseException() : Exception("Invalid ai response");
+public class InvalidAiResponseException() : Exception("Invalid ai response");
