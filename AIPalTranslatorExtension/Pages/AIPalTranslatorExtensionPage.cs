@@ -43,12 +43,15 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
             {
                 _cancellationTokenSource?.Cancel();
                 _cancellationTokenSource = new();
+                IsLoading = true;
             }
+
             var result = await TranslateHelper.TranslateAsync(SearchText, _cancellationTokenSource!);
             if (result.ResultLanguage is null) return;
             lock (_resultLock)
             {
                 _currentResult = result;
+                IsLoading = false;
                 RaiseItemsChanged();
             }
         }
@@ -59,6 +62,10 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
                 _currentResult = new(null, null, 0, ex);
                 RaiseItemsChanged();
             }
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
     public override void UpdateSearchText(string oldSearch, string newSearch)
@@ -74,10 +81,10 @@ internal sealed partial class AIPalTranslatorExtensionPage : DynamicListPage
     {
         if (_currentResult.Error != null) 
             return [new ListItem(new NoOpCommand()) { Title = $"错误:{_currentResult.Error}" }];
-        return _currentResult.ResultTexts!
+        return _currentResult.ResultTexts?
             .Select(GetResultCommand)
             //.Append(new ListItem(new NoOpCommand()){Title = $"消耗Token:{_currentResult.TokenUsed}"})
-            .ToArray();
+            .ToArray() ?? [];
     }
 
     private IListItem GetResultCommand(string resultText)
