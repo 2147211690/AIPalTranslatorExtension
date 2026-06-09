@@ -103,7 +103,7 @@ internal sealed class AIPalTranslatorExtensionPage : DynamicListPage, IDisposabl
                 if (_currentResult.Error != null) return _lastResultItems = [GetResultCommand($"错误:{_currentResult.Error}")];
                 return _lastResultItems = _currentResult.ResultTexts?
                     .Select(GetResultCommand)
-                    //.Append(new ListItem(new NoOpCommand()){Title = $"消耗Token:{_currentResult.TokenUsed}"})
+                    .Append(new ListItem(new NoOpCommand()){Title = $"消耗Token:{_currentResult.TokenUsed}"})
                     .ToArray() ?? [];
             default:
                 return [];
