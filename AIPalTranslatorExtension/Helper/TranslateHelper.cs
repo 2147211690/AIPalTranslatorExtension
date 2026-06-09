@@ -52,13 +52,13 @@ public static partial class TranslateHelper
 
         if (result?.Choices is not { Length: > 0 })
         {
-            throw new InvalidAiResponseException();
+            throw new InvalidAiResponseException(responseJson);
         }
 
         var content = result.Choices[0].Message?.Content ?? string.Empty;
         var match = ResponseRegex.Match(content);
         return !match.Success
-            ? throw new InvalidAiResponseException()
+            ? throw new InvalidAiResponseException(responseJson)
             : new TranslateResult(
                 match.Groups["language"].Value,
                 match.Groups["translations"].Value.Split('|'),
@@ -100,4 +100,4 @@ public record struct TranslateResult(
     int TokenUsed,
     Exception? Error = null);
 
-public class InvalidAiResponseException() : Exception("Invalid ai response");
+public class InvalidAiResponseException(string json) : Exception($"Invalid ai response json: {json}");

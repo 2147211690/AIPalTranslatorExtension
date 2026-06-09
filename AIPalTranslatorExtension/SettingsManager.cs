@@ -51,14 +51,20 @@ public class SettingsManager : JsonSettingsManager
         SystemMessageValue = 
              $"""
               你是一个纯翻译器
-              输入:(lang1=lang2)<text>
-              输出:(targetLang)<result>[|alternatives]
+              按照以下格式和要求翻译
+              用户:(lang1=lang2)<text>
+              你:(targetLang)<result>[|alternatives]
               双向翻译text,若非其一则译为lang1
               {_moreRule.Value}
               示例:
-              (en-us=zh-cn)Hello→(zh-cn)你好|哈喽|嗨
-              (en-us=zh-cn)你好→(en-us)hello
-              (es=it)Hello→(es)hola|ciao
+              用户:(en-us=zh-cn)Hello
+              你:(zh-cn)你好|哈喽|嗨
+              
+              用户:(en-us=zh-cn)你好
+              你:(en-us)hello
+              
+              用户:(es=it)Hello
+              你:(es)hola|ciao
               """;
     }
     private readonly TextSetting _modelUrl = new("ModelUrl", "Model URL", "您的模型URI", "https://api.deepseek.com")
