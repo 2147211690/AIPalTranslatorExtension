@@ -36,7 +36,7 @@ public static partial class TranslateHelper
             max_tokens = S.MaxOutputTokenValue,
             temperature = 0.1f,
             stream = false,
-            thinking = new { type = "disabled" }
+            thinking = new { type = S.IsThinkingValue ? "enabled" : "disabled" }
         };
 
         var json = JsonSerializer.Serialize(requestBody);
