@@ -46,8 +46,8 @@ public class SettingsManager : JsonSettingsManager
         Settings.Add(_language1);
         Settings.Add(_language2);
         Settings.Add(_maxOutputToken);
-        Settings.Add(_isThinking);
         Settings.Add(_moreRule);
+        Settings.Add(_isThinking);
         Settings.Add(_systemMessage);
         LoadSettings();
         Settings.SettingsChanged += SettingsOnSettingsChanged;
@@ -71,8 +71,9 @@ public class SettingsManager : JsonSettingsManager
     private void UpdateSystemMessage()
     {
         var rule = string.Join("\n", (MoreRuleValue ?? []).Select(a => a.EndsWith('.') ? a : $"{a}."));
-        if (string.IsNullOrWhiteSpace(_systemMessage.Value)) _systemMessage.Value = DefaultSystemMessage;
-        SystemMessageValue = _systemMessage.Value.Replace("{rule}", rule);
+        SystemMessageValue =
+            (string.IsNullOrWhiteSpace(_systemMessage.Value) ? DefaultSystemMessage : _systemMessage.Value)
+            .Replace("{rule}", rule);
     }
     private readonly TextSetting _modelUrl = new("ModelUrl", "Model URL", "您的模型URI", "https://api.deepseek.com")
     {
@@ -106,9 +107,9 @@ public class SettingsManager : JsonSettingsManager
 
     private readonly TextSetting _moreRule = new("MoreRule", "More Rule", "添加更多提示规则(通常使用英文提示,使用换行隔开)", 
         """
-        Proper nouns: use standard name first (e.g. 我的世界 → minecraft). literal as alternative
-        Use lowercase whenever possible
-        Output 1-5 translations per input
+        Proper nouns: use standard name first (e.g. 我的世界 → minecraft). literal as alternative.
+        Use lowercase whenever possible.
+        Output 1-5 translations per input.
         """)
     {
         Multiline = true,
@@ -117,15 +118,14 @@ public class SettingsManager : JsonSettingsManager
     
     private readonly ToggleSetting _isThinking = new("IsThinking", "Is Thinking", "是否思考", false);
 
-    private readonly TextSetting _systemMessage = new("SystemMessage", "System Message", "系统提示", DefaultSystemMessage
-    )
+    private readonly TextSetting _systemMessage = new("SystemMessage", "System Message", "系统提示", DefaultSystemMessage)
     {
         Multiline = true,
         Placeholder = "请输入您的系统提示"
     };
     private static string GetSettingsPath()
     {
-        var directory = Utilities.BaseSettingsPath("Noper.AiPalTranslator");
+        var directory = Utilities.BaseSettingsPath("AiPalTranslator");
         Directory.CreateDirectory(directory);
         return Path.Combine(directory, "settings.json");
     }
