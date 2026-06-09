@@ -35,7 +35,6 @@ public class SettingsManager : JsonSettingsManager
     public string Language2Value { get; private set; } = "en-us";
     public int MaxOutputTokenValue { get; private set; } = 30;
     public bool IsThinkingValue { get; private set; } = false;
-    public string[]? MoreRuleValue { get; private set; }
     public string SystemMessageValue { get; private set; } = string.Empty;
     public SettingsManager()
     {
@@ -61,7 +60,6 @@ public class SettingsManager : JsonSettingsManager
         ApiKeyValue = _apiKey.Value ?? string.Empty;
         Language1Value = _language1.Value ?? string.Empty;
         Language2Value = _language2.Value ?? string.Empty;
-        MoreRuleValue = _moreRule.Value?.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         MaxOutputTokenValue = 
             int.TryParse(_maxOutputToken.Value, out var maxOutputToken) ? maxOutputToken : 50;
         IsThinkingValue = _isThinking.Value;
@@ -70,7 +68,7 @@ public class SettingsManager : JsonSettingsManager
     }
     private void UpdateSystemMessage()
     {
-        var rule = string.Join("\n", (MoreRuleValue ?? []).Select(a => a.EndsWith('.') ? a : $"{a}."));
+        var rule = _moreRule.Value ?? string.Empty;
         SystemMessageValue =
             (string.IsNullOrWhiteSpace(_systemMessage.Value) ? DefaultSystemMessage : _systemMessage.Value)
             .Replace("{rule}", rule);
@@ -107,25 +105,24 @@ public class SettingsManager : JsonSettingsManager
 
     private readonly TextSetting _moreRule = new("MoreRule", "More Rule", "添加更多提示规则(通常使用英文提示,使用换行隔开)", 
         """
-        Proper nouns: use standard name first (e.g. 我的世界 → minecraft). literal as alternative.
+        Proper nouns: use standard name first (e.g. 我的世界 → Minecraft).
         Use lowercase whenever possible.
-        Output 1-5 translations per input.
+        Output 2-5 translations per input.
         """)
     {
         Multiline = true,
-        Placeholder = "Use lowercase whenever possible.;Output 1-5 translations per input.",
     };
     
     private readonly ToggleSetting _isThinking = new("IsThinking", "Is Thinking", "是否思考", false);
 
-    private readonly TextSetting _systemMessage = new("SystemMessage", "System Message", "系统提示", DefaultSystemMessage)
+    private readonly TextSetting _systemMessage = new("SystemMessage", "System Message", "系统提示", "")
     {
         Multiline = true,
         Placeholder = "请输入您的系统提示"
     };
     private static string GetSettingsPath()
     {
-        var directory = Utilities.BaseSettingsPath("AiPalTranslator");
+        var directory = Utilities.BaseSettingsPath("Noper.AiPalTranslator");
         Directory.CreateDirectory(directory);
         return Path.Combine(directory, "settings.json");
     }
