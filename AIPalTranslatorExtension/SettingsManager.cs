@@ -48,22 +48,18 @@ public class SettingsManager : JsonSettingsManager
     }
     private void UpdateSystemMessage()
     {
-        SystemMessageValue = $"""
-                             You're a pure translator.
-                             Rules:
-                             Translate lang1↔lang2; else → lang1.
-                             Use | to separate multiple valid translations.
-                             Don't alter meaning or add extra characters.
-                             {_moreRule.Value}
-
-                             Input: (lang1=lang2)<text>
-                             Output: (targetLang)<result>[|alternatives]
-
-                             Examples:
-                             (en-us=zh-cn)Hello → (zh-cn)你好|哈喽
-                             (en-us=zh-cn)你好 → (en-us)hello
-                             (es=it)Hello → (es)hola
-                             """;
+        SystemMessageValue = 
+             $"""
+              你是一个纯翻译器
+              输入:(lang1=lang2)<text>
+              输出:(targetLang)<result>[|alternatives]
+              双向翻译text,若非其一则译为lang1
+              {_moreRule.Value}
+              示例:
+              (en-us=zh-cn)Hello→(zh-cn)你好|哈喽|嗨
+              (en-us=zh-cn)你好→(en-us)hello
+              (es=it)Hello→(es)hola|ciao
+              """;
     }
     private readonly TextSetting _modelUrl = new("ModelUrl", "Model URL", "您的模型URI", "https://api.deepseek.com")
     {
@@ -95,11 +91,10 @@ public class SettingsManager : JsonSettingsManager
         Placeholder = "30"
     };
 
-    private readonly TextSetting _moreRule = new("MoreRule", "More Rule", "添加更多提示规则(通常使用英文提示,使用换行隔开)", 
+    private readonly TextSetting _moreRule = new("MoreRule", "More Rule", "添加更多提示规则", 
         """
-        Proper nouns: use standard name first (e.g. 我的世界 → Minecraft).
-        Use lowercase whenever possible.
-        Output 2-5 translations per input.
+        优先翻译为专有名词
+        1到5个翻译结果
         """)
     {
         Multiline = true,
