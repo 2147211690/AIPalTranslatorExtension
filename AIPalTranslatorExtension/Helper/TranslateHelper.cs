@@ -12,7 +12,7 @@ namespace AIPalTranslatorExtension.Helper;
 
 public static partial class TranslateHelper
 {
-    [GeneratedRegex("^\\((?<language>[a-zA-Z-]+?)\\)(?<translations>[^|]+(?:\\|[^|]+)*)$")]
+    [GeneratedRegex("\\((?<language>[a-zA-Z-]+?)\\)(?<translations>[^|]+(?:\\|[^|]+)*)$")]
     private static partial Regex ResponseRegex { get; }
 
     private static SettingsManager S => SettingsManager.Instance;
@@ -22,7 +22,7 @@ public static partial class TranslateHelper
         Timeout = TimeSpan.FromSeconds(30)
     };
 
-    public static async Task<TranslateResult> TranslateAsync(string text, CancellationToken cancellationToken)
+    public static async Task<TranslateResult> TranslateAsync(string text, string? targetLanguage, CancellationToken cancellationToken)
     {
         var input = $"({S.Language1Value}={S.Language2Value}){text}";
         var requestBody = new
@@ -30,8 +30,8 @@ public static partial class TranslateHelper
             model = S.ModelValue,
             messages = new[]
             {
-                new { role = "system", content = S.SystemMessageValue },
-                new { role = "user", content = input }
+                new { role = "system", content = targetLanguage is null ? S.SystemMessageValue : S.GetTargetSystemMessage(targetLanguage) },
+                new { role = "user", content = targetLanguage is null ? input : text }
             },
             max_tokens = S.MaxOutputTokenValue,
             temperature = 0.1f,
@@ -56,6 +56,7 @@ public static partial class TranslateHelper
         }
 
         var content = result.Choices[0].Message?.Content ?? string.Empty;
+        content = content.Substring(content.IndexOf('→') + 1);
         var match = ResponseRegex.Match(content);
         return !match.Success
             ? throw new InvalidAiResponseException(responseJson)

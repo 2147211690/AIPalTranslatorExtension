@@ -19,8 +19,11 @@ internal sealed class AIPalTranslatorExtensionPage : DynamicListPage, IDisposabl
     private TranslateResult _currentResult = new(null, null, 0);
     private Lock _resultLock = new();
     private Lock _cancelLock = new();
+    private string? _targetLanguage;
     private IListItem[]? _lastResultItems;
     private PageState _state = PageState.Input;
+    private string Lang1 => SettingsManager.Instance.Language1Value;
+    private string Lang2 => SettingsManager.Instance.Language2Value;
     private PageState State
     {
         get => _state;
@@ -71,7 +74,7 @@ internal sealed class AIPalTranslatorExtensionPage : DynamicListPage, IDisposabl
                 _cancellationTokenSource?.Cancel();
                 _cancellationTokenSource = new();
             }
-            var result = await TranslateHelper.TranslateAsync(SearchText, _cancellationTokenSource.Token);
+            var result = await TranslateHelper.TranslateAsync(SearchText, _targetLanguage, _cancellationTokenSource.Token);
             lock (_resultLock)
             {
                 _currentResult = result;
@@ -98,7 +101,13 @@ internal sealed class AIPalTranslatorExtensionPage : DynamicListPage, IDisposabl
         switch (State)
         {
             case PageState.Input:
-                return [new ListItem(new TranslateCommand(this)) { Title = "翻译" }, .. (_lastResultItems ?? [])];
+                return
+                [
+                    new ListItem(new TranslateCommand(this)) { Title = "双向翻译" },
+                    new ListItem(new TranslateCommand(this, Lang1)) { Title = $"翻译为{Lang1}" },
+                    new ListItem(new TranslateCommand(this, Lang2)) { Title = $"翻译为{Lang2}" },
+                    .. (_lastResultItems ?? [])
+                ];
             case PageState.Result:
                 if (_currentResult.Error != null) return _lastResultItems = [GetResultCommand($"错误:{_currentResult.Error}")];
                 return _lastResultItems = _currentResult.ResultTexts?
@@ -131,12 +140,13 @@ internal sealed class AIPalTranslatorExtensionPage : DynamicListPage, IDisposabl
         Dispose(true);
     }
     
-    private class TranslateCommand(AIPalTranslatorExtensionPage page) : InvokableCommand
+    private class TranslateCommand(AIPalTranslatorExtensionPage page, string? targetLanguage = null) : InvokableCommand
     {
         private readonly AIPalTranslatorExtensionPage _page = page ?? throw new ArgumentNullException(nameof(page));
         private static readonly CommandResult Result = CommandResult.KeepOpen();
         public override ICommandResult Invoke()
         {
+            _page._targetLanguage = targetLanguage;
             _page.State = PageState.Loading;
             return Result;
         }
